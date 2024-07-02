@@ -1,4 +1,4 @@
-import { exec, spawn } from 'child_process';
+import { ChildProcessWithoutNullStreams, exec, spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
@@ -47,10 +47,9 @@ function runAdbInstall(apkPath: string) {
 
 // install all apks in the /apks folder
 export async function installApks() {
-    const apkDir = path.resolve(__dirname, '../../apks');
-    const apks = fs.readdirSync(apkDir).filter(file => file.endsWith('.apk'));
+    const apks = fs.readdirSync(`${process.env.APK_DIR}`).filter(file => file.endsWith('.apk'));
     for (const apk of apks) {
-        const apkPath = path.join(apkDir, apk);
+        const apkPath = path.join(`${process.env.APK_DIR}`, apk);
         await runAdbInstall(apkPath);
     }
 }
@@ -154,6 +153,29 @@ export async function disableInternet() {
         } catch (error) {
             console.error('Failed to disable internet using alternative method.', error);
         }
+    }
+}
+
+let logcatProcess: ChildProcessWithoutNullStreams | null;
+export async function startLogcat() {
+    console.log('Starting logcat...');
+    logcatProcess = spawn('adb', ['logcat']);
+
+    logcatProcess.stdout.on('data', (data) => {
+        console.log(`logcat: ${data}`);
+    });
+
+    logcatProcess.stderr.on('data', (data) => {
+        console.error(`logcat error: ${data}`);
+    });
+}
+
+// Stop logcat
+export async function stopLogcat() {
+    if (logcatProcess) {
+        console.log('Stopping logcat...');
+        logcatProcess.kill();
+        logcatProcess = null;
     }
 }
 

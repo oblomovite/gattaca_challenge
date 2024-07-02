@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getPackageName, isPackageInstalled, disableInternet, enableInternet } from '../../utils/adbCommands';
+import { getPackageName, isPackageInstalled, disableInternet, enableInternet, startLogcat } from '../../utils/adbCommands';
 
 describe('Internet Connectivity Tests', () => {
     before(async () => {
@@ -66,5 +66,54 @@ describe('APK Installation Verification', () => {
             const installed = await isPackageInstalled(packageName);
             expect(installed).to.be.true;
         });
+    });
+});
+
+describe('Internet Connectivity Tests', () => {
+    const apks = fs.readdirSync(`${process.env.APK_DIR}`).filter(file => file.endsWith('.apk'));
+
+    before(async () => {
+        console.log('Disabling internet...');
+        await disableInternet();
+        await startLogcat();
+
+    });
+
+    apks.forEach(apk => {
+        it(`should display "offline" text when internet is disabled for ${apk}`, async () => {
+            const apkPath = path.join(`${process.env.APK_DIR}`, apk);
+            console.log(`Processing APK: ${apk}`);
+            const packageName = await getPackageName(apkPath);
+            const installed = await isPackageInstalled(packageName);
+
+            if (installed) {
+                console.log(`Package ${packageName} is installed. Launching app...`);
+                await driver.activateApp(packageName);
+
+                console.log('Checking for "offline" text...');
+                const isOffline = await driver.$('android=new UiSelector().textContains("offline")');
+                const isDisplayed = await isOffline.isDisplayed();
+
+                if (isDisplayed) {
+                    console.log(`"offline" text is displayed for ${packageName}`);
+                } else {
+                    console.log(`"offline" text is NOT displayed for ${packageName}`);
+                }
+
+                expect(isDisplayed).to.be.true;
+
+                console.log(`Terminating app ${packageName}...`);
+                await driver.terminateApp(packageName);
+            } else {
+                console.log(`Package ${packageName} is not installed.`);
+                throw new Error(`APK ${apk} is not installed.`);
+            }
+        });
+    });
+
+    after(async () => {
+        console.log('Enabling internet...');
+        await enableInternet();
+
     });
 });

@@ -1,12 +1,12 @@
-import type { Options } from '@wdio/types';
 import dotenv from 'dotenv';
-import path from 'path';
 dotenv.config();
 
 import { startEmulator, 
 //    stopEmulator, 
-    installAllApks,
+    installApks,
     waitForDevice,
+    stopLogcat,
+    stopEmulator,
 } from './utils/adbCommands'
 
 dotenv.config();
@@ -14,9 +14,10 @@ dotenv.config();
 process.env.ANDROID_HOME = process.env.ANDROID_HOME || '/Users/rob/Library/Android/sdk';
 process.env.ANDROID_SDK_ROOT = process.env.ANDROID_SDK_ROOT || '/Users/rob/Library/Android/sdk';
 process.env.ANDROID_AVD_HOME = process.env.ANDROID_AVD_HOME || '/Users/rob/.android/avd';
-process
+process.env.EMULATOR_NAME = process.env.EMULATOR_NAME || 'Pixel_5_API_32';
 
-export const config: Options.Testrunner = {
+// TODO: fix type
+export const config: any = {
   runner: 'local',
   autoCompileOpts: {
     autoCompile: true,
@@ -31,20 +32,18 @@ export const config: Options.Testrunner = {
   exclude: [],
   maxInstances: 10,
 
-  capabilities: [{
-      'appium:deviceName': process.env.EMULATOR_NAME,
-      'appium:platformVersion': '12.0',
-      'appium:automationName': 'UiAutomator2',
-      'appium:noReset': true,
+  capabilities: [
+    {
       maxInstances: 3,
       browserName: 'chrome',
       browserVersion: 'stable',
       platformName: 'Android',
-      //   'appium:app': path.resolve(
-      //     __dirname,
-      //     process.env.APK_PATH || './apks/lichess.apk'
-      //   ),
-    },],
+      'appium:deviceName': `${process.env.EMULATOR_NAME}`,
+      'appium:platformVersion': `${process.env.EMULATOR_VERSION}`,
+      'appium:orientation': 'PORTRAIT',
+      'appium:automationName': 'UiAutomator2',
+    },
+  ],
 
   logLevel: 'info',
   bail: 0,
@@ -59,28 +58,43 @@ export const config: Options.Testrunner = {
     timeout: 60000,
   },
 
-    onPrepare: async () => {
-        console.log('Preparing environment...');
-        // Add emulator directory to PATH
-        process.env.PATH = `${process.env.ANDROID_HOME}/emulator:${process.env.ANDROID_HOME}/platform-tools:${process.env.PATH}`;
-        try {
-            await startEmulator();
-            await waitForDevice(); // Ensure the device is ready
-            console.log('Emulator started and ready. Installing APKs...');
-            await installAllApks(path.resolve(__dirname, './apks'));
-            console.log('APKs installed.');
-        } catch (error) {
-            console.error(`Error in onPrepare: ${error}`);
-        }
-    },
-    onComplete: async () => {
-        console.log('Cleaning up environment...');
-        try {
-            console.log('Stopping emulator...');
-            // await stopEmulator();
-        } catch (error) {
-            console.error(`Error in onComplete: ${error}`);
-        }
-    },
+  services: [
+    [
+      'appium',
+      {
+        args: {
+          address: 'localhost',
+          port: 4723,
+          log: './appium.log',
+          allowInsecure: ['chromedriver_autodownload'],
+        },
+      },
+    ],
+  ],
+
+  onPrepare: async () => {
+    console.log('Preparing environment...');
+    // Add emulator directory to PATH
+    process.env.PATH = `${process.env.ANDROID_HOME}/emulator:${process.env.ANDROID_HOME}/platform-tools:${process.env.PATH}`;
+    try {
+      await startEmulator();
+      await waitForDevice();
+      console.log('Emulator started and ready. Installing APKs...');
+      await installApks();
+      console.log('APKs installed.');
+    } catch (error) {
+      console.error(`Error in onPrepare: ${error}`);
+    }
+  },
+  onComplete: async () => {
+    console.log('Cleaning up environment...');
+    try {
+      console.log('Stopping emulator...');
+//      await stopEmulator();
+//      await stopLogcat();
+    } catch (error) {
+      console.error(`Error in onComplete: ${error}`);
+    }
+  },
 };
 
