@@ -2,11 +2,12 @@ import { expect } from 'chai';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getPackageName, isPackageInstalled, disableInternet, enableInternet, startLogcat } from '../../utils/adbCommands';
+import { getPackageName, isPackageInstalled, disableInternet, enableInternet, startLogcat, installApks } from '../../utils/adbCommands';
 
 describe('Internet Connectivity Tests', () => {
     before(async () => {
         await disableInternet();
+        await installApks();
     });
 
     // verify that the internet is disabled
@@ -56,12 +57,11 @@ describe('Internet Connectivity Tests', () => {
 
 
 describe('APK Installation Verification', () => {
-    const apkDir = path.resolve(__dirname, '../../apks');
-    const apks = fs.readdirSync(apkDir).filter(file => file.endsWith('.apk'));
+    const apks = fs.readdirSync(`${process.env.APK_DIR}`).filter(file => file.endsWith('.apk'));
 
     apks.forEach(apk => {
         it(`should verify that ${apk} is installed`, async () => {
-            const apkPath = path.join(apkDir, apk);
+            const apkPath = path.join(`${process.env.APK_DIR}`, apk);
             const packageName = await getPackageName(apkPath);
             const installed = await isPackageInstalled(packageName);
             expect(installed).to.be.true;

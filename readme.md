@@ -51,9 +51,15 @@ npx appium --allow-insecure chromedriver_autodownload
 npx wdio run wdio.conf.js
 ```
 
+## TODOS
+
+- [x] install apks on a device
+- [x] toggle the device's wifi
+- [x] log information about the status of the apk
+- [x] run tests on that apk
+
 ## Enhancements List
 
-- [ ] Add more tests
 - [ ] Streamline apk folder inflation with a script
 - [ ] Provide LLM integration
 - [ ] Enable app logging to track the app's behavior
@@ -74,3 +80,4 @@ npx wdio run wdio.conf.js
 ## Known Bugs
 
 - Sometimes the apks do not install if the emulator is not already running and requires running the tests twice
+- Appium server doesn't interact with emulator due to some issue, so this project is incomplete
