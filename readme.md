@@ -57,6 +57,7 @@ npx wdio run wdio.conf.js
 - [x] toggle the device's wifi
 - [x] log information about the status of the apk
 - [x] run tests on that apk
+- [ ] fix environment variables for appium server
 
 ## Enhancements List
 
